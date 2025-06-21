@@ -39,6 +39,132 @@
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="map.js"></script>
+<script>
+  let map = L.map("map").setView([7.8731, 80.7718], 13);
+
+// Load tiles
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom: 19,
+}).addTo(map);
+
+let isMeasuring = false;
+let polygonCoords = [];
+let polyline = null;
+let polygon = null;
+let markers = [];
+let watchId = null;
+
+// Start measuring
+function startMeasuring() {
+  isMeasuring = true;
+  polygonCoords = [];
+  clearMap();
+
+  if (!navigator.geolocation) {
+    alert("Geolocation is not supported by your browser.");
+    return;
+  }
+
+  watchId = navigator.geolocation.watchPosition(
+    (position) => {
+      const latlng = [position.coords.latitude, position.coords.longitude];
+
+      if (polygonCoords.length > 0) {
+        const last = polygonCoords[polygonCoords.length - 1];
+        const dist = getDistance(last, latlng);
+        if (dist < 3 || dist > 50) return; // prevent jumps or too close
+      }
+
+      polygonCoords.push(latlng);
+      const marker = L.marker(latlng).addTo(map);
+      markers.push(marker);
+
+      if (polyline) map.removeLayer(polyline);
+      polyline = L.polyline(polygonCoords, { color: "#f7ee6d" }).addTo(map);
+    },
+    (err) => {
+      alert("Error getting location: " + err.message);
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0,
+    }
+  );
+}
+
+// Stop measuring
+function stopMeasuring() {
+  isMeasuring = false;
+  if (watchId !== null) {
+    navigator.geolocation.clearWatch(watchId);
+    watchId = null;
+  }
+
+  if (polygonCoords.length >= 3) {
+    if (polygon) map.removeLayer(polygon);
+    polygonCoords.push(polygonCoords[0]); // close the shape
+    polygon = L.polygon(polygonCoords, {
+      color: "#f7ee6d",
+      fillColor: "#f7ee6d",
+      fillOpacity: 0.3,
+    }).addTo(map);
+    map.fitBounds(polygon.getBounds());
+  }
+}
+
+// Find current location
+function findLocation() {
+  if (!navigator.geolocation) {
+    alert("Geolocation is not supported by your browser.");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const latlng = [position.coords.latitude, position.coords.longitude];
+      map.setView(latlng, 17);
+      L.circleMarker(latlng, {
+        radius: 8,
+        color: "#f7ee6d",
+        fillColor: "#f7ee6d",
+        fillOpacity: 1,
+      }).addTo(map);
+    },
+    (err) => {
+      alert("Failed to get location: " + err.message);
+    },
+    {
+      enableHighAccuracy: true,
+    }
+  );
+}
+
+// Remove old markers/polygons
+function clearMap() {
+  markers.forEach((m) => map.removeLayer(m));
+  markers = [];
+  if (polyline) map.removeLayer(polyline);
+  if (polygon) map.removeLayer(polygon);
+}
+
+// Simple Haversine distance function
+function getDistance(from, to) {
+  const R = 6371e3;
+  const [lat1, lon1] = from;
+  const [lat2, lon2] = to;
+  const φ1 = lat1 * Math.PI / 180;
+  const φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+  const a =
+    Math.sin(Δφ / 2) ** 2 +
+    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c; // meters
+}
+</script>
 </body>
 </html>
