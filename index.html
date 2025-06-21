@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Land Measurement Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    html, body { height: 100%; margin: 0; padding: 0; }
+    #map { height: 100%; width: 100%; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <script>
+    // Initialize map
+    var map = L.map('map').setView([7.8731, 80.7718], 8); // Sri Lanka center
+
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Example polygon points (latitude, longitude)
+    var polygonCoords = [
+      [7.8731, 80.7718],
+      [7.8831, 80.7818],
+      [7.8731, 80.7918],
+      [7.8631, 80.7818],
+      [7.8731, 80.7718] // close loop
+    ];
+
+    // Add polygon to map
+    var polygon = L.polygon(polygonCoords, {
+      color: '#f7ee6d',
+      fillColor: '#f7ee6d',
+      fillOpacity: 0.3
+    }).addTo(map);
+
+    // Zoom to fit polygon
+    map.fitBounds(polygon.getBounds());
+
+    
+  </script>
+</body>
+</html>
